@@ -109,7 +109,7 @@ export async function findSharedMultiplayerGames(
 
   const copiesCount = new Map<number, number>();
   const ownedByMap = new Map<number, string[]>();
-  const labels = allInputs.map((input, i) =>
+  const labels = allInputs.map((_input, i) =>
     i === 0 ? "Player 1" : i === 1 ? "Player 2" : `Family Member ${i - 1}`
   );
 
