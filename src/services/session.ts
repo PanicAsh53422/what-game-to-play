@@ -56,6 +56,10 @@ export function clearAllPicks() {
   getSocket().emit("session:clear-picks");
 }
 
+export function triggerRandomPick(source: string, appids: number[]) {
+  getSocket().emit("session:random-pick", { source, appids });
+}
+
 export function disconnectSession() {
   if (socket) {
     socket.disconnect();

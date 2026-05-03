@@ -12,6 +12,7 @@ import {
   removeGameFromWantList,
   voteForGame,
   clearAllPicks,
+  triggerRandomPick,
 } from "./services/session";
 import type { GameDetails, SessionState } from "./types/steam";
 import "./App.css";
@@ -121,6 +122,8 @@ function App() {
           onRemove={removeGameFromWantList}
           onVote={voteForGame}
           onClearAll={clearAllPicks}
+          onRandomPick={triggerRandomPick}
+          onAdd={addGameToWantList}
         />
       )}
 

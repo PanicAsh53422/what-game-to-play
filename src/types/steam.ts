@@ -16,6 +16,12 @@ export interface GameDetails {
   ownedBy: string[];
 }
 
+export interface RandomPick {
+  source: string;
+  appid: number;
+  timestamp: number;
+}
+
 export interface SessionState {
   sessionId: string;
   games: GameDetails[];
@@ -27,6 +33,7 @@ export interface SessionState {
     player1: number[];
     player2: number[];
   };
+  randomPick: RandomPick | null;
   playerSlot: "player1" | "player2";
   connectedPlayers: number;
 }

@@ -8,9 +8,19 @@ interface Props {
   onRemove: (appid: number) => void;
   onVote: (appid: number) => void;
   onClearAll: () => void;
+  onRandomPick: (source: string, appids: number[]) => void;
+  onAdd: (appid: number) => void;
 }
 
-export function WantToPlayList({ session, games, onRemove, onVote, onClearAll }: Props) {
+export function WantToPlayList({
+  session,
+  games,
+  onRemove,
+  onVote,
+  onClearAll,
+  onRandomPick,
+  onAdd,
+}: Props) {
   const myWant = session.wantToPlay[session.playerSlot];
   const otherSlot = session.playerSlot === "player1" ? "player2" : "player1";
   const otherWant = session.wantToPlay[otherSlot];
@@ -18,6 +28,7 @@ export function WantToPlayList({ session, games, onRemove, onVote, onClearAll }:
   const allWanted = [...new Set([...myWant, ...otherWant])];
   const allWantedGames = games.filter((g) => allWanted.includes(g.appid));
   const myGames = games.filter((g) => myWant.includes(g.appid));
+  const canAdd = myWant.length < 5;
 
   function getVoteCount(appid: number): number {
     let count = 0;
@@ -46,7 +57,16 @@ export function WantToPlayList({ session, games, onRemove, onVote, onClearAll }:
       {mutualGames.length > 0 && (
         <div className="mutual-section">
           <h2>Both Voted For</h2>
-          <RandomPicker games={mutualGames} label="Pick Random from Mutual Votes" />
+          <RandomPicker
+            games={mutualGames}
+            label="Pick Random from Mutual Votes"
+            source="mutualVotes"
+            syncedPick={session.randomPick}
+            onSyncedPick={onRandomPick}
+            onAddToPicks={onAdd}
+            canAdd={canAdd}
+            wantList={myWant}
+          />
           <div className="game-grid">
             {mutualGames.map((game) => (
               <GameCard key={game.appid} game={game} voteCount={2} />
@@ -59,6 +79,12 @@ export function WantToPlayList({ session, games, onRemove, onVote, onClearAll }:
         <RandomPicker
           games={allWantedGames}
           label="Pick Random from All Picks"
+          source="allPicks"
+          syncedPick={session.randomPick}
+          onSyncedPick={onRandomPick}
+          onAddToPicks={onAdd}
+          canAdd={canAdd}
+          wantList={myWant}
         />
       )}
 
