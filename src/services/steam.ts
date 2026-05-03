@@ -7,6 +7,11 @@ interface SteamCategory {
   description: string;
 }
 
+interface SteamGenre {
+  id: string;
+  description: string;
+}
+
 export async function resolveToSteamId(
   apiKey: string,
   input: string
@@ -51,6 +56,7 @@ async function getAppDetails(
 ): Promise<{
   isMultiplayer: boolean;
   categories: string[];
+  genres: string[];
   headerImage: string;
 } | null> {
   try {
@@ -61,7 +67,9 @@ async function getAppDetails(
     if (!appData?.success) return null;
 
     const categories: SteamCategory[] = appData.data.categories || [];
+    const genres: SteamGenre[] = appData.data.genres || [];
     const categoryNames = categories.map((c) => c.description);
+    const genreNames = genres.map((g) => g.description);
     const isMultiplayer = categories.some((c) =>
       MULTIPLAYER_CATEGORY_IDS.includes(c.id)
     );
@@ -69,6 +77,7 @@ async function getAppDetails(
     return {
       isMultiplayer,
       categories: categoryNames,
+      genres: genreNames,
       headerImage: appData.data.header_image || "",
     };
   } catch {
@@ -151,6 +160,7 @@ export async function findSharedMultiplayerGames(
           headerImage: detail.headerImage,
           isMultiplayer: true,
           categories: detail.categories,
+          genres: detail.genres,
           copiesInFamily: copiesCount.get(appid) || 0,
           ownedBy: ownedByMap.get(appid) || [],
         });

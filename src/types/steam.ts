@@ -11,27 +11,29 @@ export interface GameDetails {
   headerImage: string;
   isMultiplayer: boolean;
   categories: string[];
+  genres: string[];
   copiesInFamily: number;
   ownedBy: string[];
 }
 
-export interface PlayerInput {
-  steamId: string;
-  label: string;
+export interface SessionState {
+  sessionId: string;
+  games: GameDetails[];
+  wantToPlay: {
+    player1: number[];
+    player2: number[];
+  };
+  votes: {
+    player1: number[];
+    player2: number[];
+  };
+  playerSlot: "player1" | "player2";
+  connectedPlayers: number;
 }
 
-export interface FamilyMember {
-  steamId: string;
-  label: string;
-}
-
-export interface AppState {
+export interface SavedConfig {
   apiKey: string;
-  player1: PlayerInput;
-  player2: PlayerInput;
-  familyMembers: FamilyMember[];
-  results: GameDetails[];
-  loading: boolean;
-  error: string | null;
-  progress: string;
+  player1: string;
+  player2: string;
+  familyMembers: string[];
 }

@@ -3,22 +3,40 @@ import { getSteamStoreUrl } from "../services/steam";
 
 interface Props {
   game: GameDetails;
+  onAdd?: () => void;
+  onRemove?: () => void;
+  isInWantList?: boolean;
+  canAdd?: boolean;
+  voteCount?: number;
+  onVote?: () => void;
+  hasVoted?: boolean;
 }
 
-export function GameCard({ game }: Props) {
+export function GameCard({
+  game,
+  onAdd,
+  onRemove,
+  isInWantList,
+  canAdd,
+  voteCount,
+  onVote,
+  hasVoted,
+}: Props) {
   return (
-    <a
-      href={getSteamStoreUrl(game.appid)}
-      target="_blank"
-      rel="noreferrer"
-      className="game-card"
-    >
-      <img
-        src={game.headerImage}
-        alt={game.name}
-        className="game-image"
-        loading="lazy"
-      />
+    <div className={`game-card ${isInWantList ? "in-want-list" : ""} ${voteCount && voteCount >= 2 ? "mutual-vote" : ""}`}>
+      <a
+        href={getSteamStoreUrl(game.appid)}
+        target="_blank"
+        rel="noreferrer"
+        className="game-card-link"
+      >
+        <img
+          src={game.headerImage}
+          alt={game.name}
+          className="game-image"
+          loading="lazy"
+        />
+      </a>
       <div className="game-info">
         <h3>{game.name}</h3>
         <div className="game-tags">
@@ -39,14 +57,56 @@ export function GameCard({ game }: Props) {
                 {c}
               </span>
             ))}
+          {game.genres.map((g) => (
+            <span key={g} className="tag tag-genre">
+              {g}
+            </span>
+          ))}
         </div>
         <div className="game-meta">
           <span className="copies">
-            {game.copiesInFamily} {game.copiesInFamily === 1 ? "copy" : "copies"} in family
+            {game.copiesInFamily}{" "}
+            {game.copiesInFamily === 1 ? "copy" : "copies"} in family
           </span>
           <span className="owners">Owned by: {game.ownedBy.join(", ")}</span>
         </div>
+        <div className="game-actions">
+          {onAdd && canAdd && !isInWantList && (
+            <button
+              className="btn-want"
+              onClick={(e) => {
+                e.preventDefault();
+                onAdd();
+              }}
+            >
+              + Want to Play
+            </button>
+          )}
+          {onRemove && isInWantList && (
+            <button
+              className="btn-remove-want"
+              onClick={(e) => {
+                e.preventDefault();
+                onRemove();
+              }}
+            >
+              Remove
+            </button>
+          )}
+          {onVote !== undefined && (
+            <button
+              className={`btn-vote ${hasVoted ? "voted" : ""}`}
+              onClick={(e) => {
+                e.preventDefault();
+                onVote();
+              }}
+            >
+              {hasVoted ? "Voted!" : "Vote"}{" "}
+              {voteCount ? `(${voteCount})` : ""}
+            </button>
+          )}
+        </div>
       </div>
-    </a>
+    </div>
   );
 }

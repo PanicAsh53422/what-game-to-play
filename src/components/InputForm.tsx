@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { loadConfig, saveConfig } from "../services/storage";
 
 interface Props {
   onSubmit: (
@@ -15,6 +16,21 @@ export function InputForm({ onSubmit, loading }: Props) {
   const [player1, setPlayer1] = useState("");
   const [player2, setPlayer2] = useState("");
   const [familyMembers, setFamilyMembers] = useState<string[]>([]);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    const config = loadConfig();
+    setApiKey(config.apiKey);
+    setPlayer1(config.player1);
+    setPlayer2(config.player2);
+    setFamilyMembers(config.familyMembers);
+  }, []);
+
+  function handleSave() {
+    saveConfig({ apiKey, player1, player2, familyMembers });
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  }
 
   function addFamilyMember() {
     setFamilyMembers([...familyMembers, ""]);
@@ -32,6 +48,7 @@ export function InputForm({ onSubmit, loading }: Props) {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    saveConfig({ apiKey, player1, player2, familyMembers });
     const activeFamilyMembers = familyMembers.filter((m) => m.trim());
     onSubmit(apiKey, player1, player2, activeFamilyMembers);
   }
@@ -88,7 +105,11 @@ export function InputForm({ onSubmit, loading }: Props) {
       <div className="form-section family-section">
         <div className="family-header">
           <label>Steam Family Members (optional)</label>
-          <button type="button" className="btn-secondary" onClick={addFamilyMember}>
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={addFamilyMember}
+          >
             + Add Member
           </button>
         </div>
@@ -115,9 +136,18 @@ export function InputForm({ onSubmit, loading }: Props) {
         ))}
       </div>
 
-      <button type="submit" className="btn-primary" disabled={loading}>
-        {loading ? "Searching..." : "Find Games"}
-      </button>
+      <div className="form-actions">
+        <button type="submit" className="btn-primary" disabled={loading}>
+          {loading ? "Searching..." : "Find Games"}
+        </button>
+        <button
+          type="button"
+          className="btn-secondary"
+          onClick={handleSave}
+        >
+          {saved ? "Saved!" : "Save Settings"}
+        </button>
+      </div>
     </form>
   );
 }

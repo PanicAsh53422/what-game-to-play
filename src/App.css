@@ -9,6 +9,7 @@
   --border: #2a475e;
   --danger: #e74c3c;
   --success: #2ecc71;
+  --gold: #f1c40f;
   --radius: 6px;
 }
 
@@ -84,6 +85,12 @@ header p {
   gap: 1rem;
 }
 
+.form-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
 input[type="text"],
 input[type="password"] {
   background: var(--bg-input);
@@ -97,6 +104,21 @@ input[type="password"] {
 }
 
 input:focus {
+  border-color: var(--accent);
+}
+
+select {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.6rem 0.75rem;
+  color: var(--text);
+  font-size: 0.9rem;
+  outline: none;
+  cursor: pointer;
+}
+
+select:focus {
   border-color: var(--accent);
 }
 
@@ -157,6 +179,11 @@ input:focus {
   background: rgba(102, 192, 244, 0.1);
 }
 
+.btn-small {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8rem;
+}
+
 .btn-remove {
   background: transparent;
   color: var(--danger);
@@ -188,6 +215,133 @@ input:focus {
   border: 1px solid var(--danger);
 }
 
+/* Session Panel */
+.session-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.5rem;
+  margin-top: 1rem;
+}
+
+.session-panel.active {
+  border-color: var(--success);
+}
+
+.session-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.session-divider {
+  color: var(--text-light);
+  font-size: 0.9rem;
+}
+
+.session-join {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.session-join input {
+  width: 140px;
+  text-align: center;
+  font-family: monospace;
+  font-size: 1.1rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.session-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.session-code-display {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.session-label {
+  color: var(--text-light);
+  font-size: 0.9rem;
+}
+
+.session-code {
+  font-family: monospace;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--gold);
+  letter-spacing: 0.15em;
+}
+
+.session-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--text-light);
+}
+
+.slot-label {
+  color: var(--accent);
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--danger);
+}
+
+.status-dot.connected {
+  background: var(--success);
+}
+
+.session-error {
+  color: var(--danger);
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+}
+
+/* Want to Play */
+.want-to-play {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 2px solid var(--accent);
+}
+
+.want-to-play h2 {
+  font-size: 1.25rem;
+  color: #fff;
+  margin-bottom: 0.75rem;
+}
+
+.mutual-section {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: rgba(241, 196, 15, 0.08);
+  border: 1px solid var(--gold);
+  border-radius: var(--radius);
+}
+
+.mutual-section h2 {
+  color: var(--gold);
+}
+
+.empty-state {
+  color: var(--text-light);
+  padding: 1rem 0;
+  font-size: 0.95rem;
+}
+
 /* Results */
 .results {
   margin-top: 2rem;
@@ -207,6 +361,12 @@ input:focus {
   color: #fff;
 }
 
+.results-filters {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
 .filter-input {
   background: var(--bg-input);
   border: 1px solid var(--border);
@@ -214,7 +374,7 @@ input:focus {
   padding: 0.5rem 0.75rem;
   color: var(--text);
   font-size: 0.9rem;
-  width: 220px;
+  width: 180px;
   outline: none;
 }
 
@@ -222,11 +382,22 @@ input:focus {
   border-color: var(--accent);
 }
 
+.filter-select {
+  width: 160px;
+}
+
+.results-count {
+  color: var(--text-light);
+  font-size: 0.85rem;
+  margin-bottom: 0.75rem;
+}
+
 /* Game grid */
 .game-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 1rem;
+  margin-bottom: 1.5rem;
 }
 
 .game-card {
@@ -234,14 +405,27 @@ input:focus {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   overflow: hidden;
-  text-decoration: none;
-  color: inherit;
   transition: border-color 0.2s, transform 0.15s;
 }
 
 .game-card:hover {
   border-color: var(--accent);
   transform: translateY(-2px);
+}
+
+.game-card.in-want-list {
+  border-color: var(--success);
+}
+
+.game-card.mutual-vote {
+  border-color: var(--gold);
+  box-shadow: 0 0 12px rgba(241, 196, 15, 0.2);
+}
+
+.game-card-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
 }
 
 .game-image {
@@ -278,6 +462,11 @@ input:focus {
   border-radius: 3px;
 }
 
+.tag-genre {
+  background: rgba(142, 68, 173, 0.2);
+  color: #bb86fc;
+}
+
 .game-meta {
   display: flex;
   flex-direction: column;
@@ -288,6 +477,64 @@ input:focus {
 
 .copies {
   color: var(--success);
+}
+
+.game-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+  flex-wrap: wrap;
+}
+
+.btn-want {
+  background: var(--success);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  padding: 0.35rem 0.75rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  font-weight: 600;
+  transition: opacity 0.2s;
+}
+
+.btn-want:hover {
+  opacity: 0.85;
+}
+
+.btn-remove-want {
+  background: transparent;
+  color: var(--danger);
+  border: 1px solid var(--danger);
+  border-radius: var(--radius);
+  padding: 0.35rem 0.75rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.btn-remove-want:hover {
+  background: rgba(231, 76, 60, 0.1);
+}
+
+.btn-vote {
+  background: transparent;
+  color: var(--gold);
+  border: 1px solid var(--gold);
+  border-radius: var(--radius);
+  padding: 0.35rem 0.75rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.btn-vote:hover {
+  background: rgba(241, 196, 15, 0.1);
+}
+
+.btn-vote.voted {
+  background: var(--gold);
+  color: #1b2838;
 }
 
 .no-results {
@@ -302,12 +549,40 @@ input:focus {
     flex-direction: column;
   }
 
+  .form-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
   .results-header {
     flex-direction: column;
     align-items: flex-start;
   }
 
-  .filter-input {
+  .results-filters {
     width: 100%;
+  }
+
+  .filter-input,
+  .filter-select {
+    width: 100%;
+  }
+
+  .session-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .session-join {
+    flex-direction: column;
+  }
+
+  .session-join input {
+    width: 100%;
+  }
+
+  .session-info {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
