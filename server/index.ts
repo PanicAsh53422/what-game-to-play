@@ -1,5 +1,9 @@
 import express from "express";
 import cors from "cors";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 app.use(cors());
@@ -59,7 +63,13 @@ app.get("/api/app-details", async (req, res) => {
   }
 });
 
-const PORT = 3001;
+const distPath = path.join(__dirname, "..", "dist");
+app.use(express.static(distPath));
+app.get("*", (_req, res) => {
+  res.sendFile(path.join(distPath, "index.html"));
+});
+
+const PORT = parseInt(process.env.PORT || "3001", 10);
 app.listen(PORT, () => {
-  console.log(`Steam API proxy running on http://localhost:${PORT}`);
+  console.log(`Server running on http://localhost:${PORT}`);
 });
