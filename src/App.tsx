@@ -11,6 +11,7 @@ import {
   addGameToWantList,
   removeGameFromWantList,
   voteForGame,
+  clearAllPicks,
 } from "./services/session";
 import type { GameDetails, SessionState } from "./types/steam";
 import "./App.css";
@@ -28,7 +29,7 @@ function App() {
     apiKey: string,
     player1: string,
     player2: string,
-    familyMembers: string[]
+    familyMembers: string[],
   ) {
     setLoading(true);
     setError(null);
@@ -42,12 +43,12 @@ function App() {
         player1,
         player2,
         familyMembers,
-        setProgress
+        setProgress,
       );
       setResults(games);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "An unknown error occurred"
+        err instanceof Error ? err.message : "An unknown error occurred",
       );
     } finally {
       setLoading(false);
@@ -87,10 +88,7 @@ function App() {
 
       {!inSession && !hasResults && (
         <>
-          <JoinPanel
-            onJoin={handleJoinSession}
-            error={sessionError}
-          />
+          <JoinPanel onJoin={handleJoinSession} error={sessionError} />
           <div className="section-divider">
             <span>or search for shared games</span>
           </div>
@@ -122,6 +120,7 @@ function App() {
           games={results}
           onRemove={removeGameFromWantList}
           onVote={voteForGame}
+          onClearAll={clearAllPicks}
         />
       )}
 

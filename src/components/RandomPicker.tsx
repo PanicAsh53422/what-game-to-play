@@ -5,9 +5,12 @@ import { GameCard } from "./GameCard";
 interface Props {
   games: GameDetails[];
   label: string;
+  onAddToPicks?: (appid: number) => void;
+  canAdd?: boolean;
+  wantList?: number[];
 }
 
-export function RandomPicker({ games, label }: Props) {
+export function RandomPicker({ games, label, onAddToPicks, canAdd, wantList }: Props) {
   const [picked, setPicked] = useState<GameDetails | null>(null);
   const [spinning, setSpinning] = useState(false);
 
@@ -32,6 +35,8 @@ export function RandomPicker({ games, label }: Props) {
 
   if (games.length === 0) return null;
 
+  const alreadyInList = picked && wantList?.includes(picked.appid);
+
   return (
     <div className="random-picker">
       <button
@@ -44,6 +49,17 @@ export function RandomPicker({ games, label }: Props) {
       {picked && (
         <div className={`random-result ${spinning ? "spinning" : "landed"}`}>
           <GameCard game={picked} />
+          {!spinning && onAddToPicks && canAdd && !alreadyInList && (
+            <button
+              className="btn-want random-add"
+              onClick={() => onAddToPicks(picked.appid)}
+            >
+              + Add to Picks
+            </button>
+          )}
+          {!spinning && alreadyInList && (
+            <span className="random-already">Already in your picks</span>
+          )}
         </div>
       )}
     </div>

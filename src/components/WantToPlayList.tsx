@@ -7,9 +7,10 @@ interface Props {
   games: GameDetails[];
   onRemove: (appid: number) => void;
   onVote: (appid: number) => void;
+  onClearAll: () => void;
 }
 
-export function WantToPlayList({ session, games, onRemove, onVote }: Props) {
+export function WantToPlayList({ session, games, onRemove, onVote, onClearAll }: Props) {
   const myWant = session.wantToPlay[session.playerSlot];
   const otherSlot = session.playerSlot === "player1" ? "player2" : "player1";
   const otherWant = session.wantToPlay[otherSlot];
@@ -61,7 +62,14 @@ export function WantToPlayList({ session, games, onRemove, onVote }: Props) {
         />
       )}
 
-      <h2>Your Picks ({myGames.length}/5)</h2>
+      <div className="picks-header">
+        <h2>Your Picks ({myGames.length}/5)</h2>
+        {myGames.length > 0 && (
+          <button className="btn-clear" onClick={onClearAll}>
+            Clear All
+          </button>
+        )}
+      </div>
       {myGames.length > 0 ? (
         <div className="game-grid">
           {myGames.map((game) => (

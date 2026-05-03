@@ -64,7 +64,13 @@ export function ResultsList({ games, session, onAddToWantList }: Props) {
         </div>
       </div>
 
-      <RandomPicker games={filtered} label="Pick a Random Game" />
+      <RandomPicker
+        games={filtered}
+        label="Pick a Random Game"
+        onAddToPicks={session && onAddToWantList ? onAddToWantList : undefined}
+        canAdd={myWantList.length < 5}
+        wantList={myWantList}
+      />
 
       {filtered.length > 0 && (
         <p className="results-count">

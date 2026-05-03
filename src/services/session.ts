@@ -52,6 +52,10 @@ export function voteForGame(appid: number) {
   getSocket().emit("session:vote", { appid });
 }
 
+export function clearAllPicks() {
+  getSocket().emit("session:clear-picks");
+}
+
 export function disconnectSession() {
   if (socket) {
     socket.disconnect();
