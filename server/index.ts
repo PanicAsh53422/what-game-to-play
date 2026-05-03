@@ -82,12 +82,19 @@ interface GameData {
   ownedBy: string[];
 }
 
+interface RandomPick {
+  source: string;
+  appid: number;
+  timestamp: number;
+}
+
 interface Session {
   id: string;
   games: GameData[];
   wantToPlay: { player1: number[]; player2: number[] };
   votes: { player1: number[]; player2: number[] };
   sockets: { player1: string | null; player2: string | null };
+  randomPick: RandomPick | null;
 }
 
 const sessions = new Map<string, Session>();
@@ -114,6 +121,7 @@ function broadcastState(session: Session) {
     games: session.games,
     wantToPlay: session.wantToPlay,
     votes: session.votes,
+    randomPick: session.randomPick,
     connectedPlayers: getConnectedCount(session),
   };
 
@@ -143,6 +151,7 @@ io.on("connection", (socket) => {
       wantToPlay: { player1: [], player2: [] },
       votes: { player1: [], player2: [] },
       sockets: { player1: socket.id, player2: null },
+      randomPick: null,
     };
     sessions.set(id, session);
     currentSessionId = id;
@@ -224,6 +233,36 @@ io.on("connection", (socket) => {
       } else {
         session.votes[currentSlot].push(data.appid);
       }
+      broadcastState(session);
+    }
+  );
+
+  socket.on("session:clear-picks", () => {
+    if (!currentSessionId || !currentSlot) return;
+    const session = sessions.get(currentSessionId);
+    if (!session) return;
+
+    const removed = session.wantToPlay[currentSlot];
+    session.wantToPlay[currentSlot] = [];
+    session.votes[currentSlot] = session.votes[currentSlot].filter(
+      (id) => !removed.includes(id)
+    );
+    broadcastState(session);
+  });
+
+  socket.on(
+    "session:random-pick",
+    (data: { source: string; appids: number[] }) => {
+      if (!currentSessionId) return;
+      const session = sessions.get(currentSessionId);
+      if (!session || data.appids.length === 0) return;
+
+      const picked = data.appids[Math.floor(Math.random() * data.appids.length)];
+      session.randomPick = {
+        source: data.source,
+        appid: picked,
+        timestamp: Date.now(),
+      };
       broadcastState(session);
     }
   );
