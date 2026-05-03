@@ -1,5 +1,6 @@
 import type { GameDetails, SessionState } from "../types/steam";
 import { GameCard } from "./GameCard";
+import { RandomPicker } from "./RandomPicker";
 
 interface Props {
   session: SessionState;
@@ -13,12 +14,9 @@ export function WantToPlayList({ session, games, onRemove, onVote }: Props) {
   const otherSlot = session.playerSlot === "player1" ? "player2" : "player1";
   const otherWant = session.wantToPlay[otherSlot];
 
-  const myGames = games.filter((g) => myWant.includes(g.appid));
-  const otherGames = games.filter(
-    (g) => otherWant.includes(g.appid) && !myWant.includes(g.appid)
-  );
-
   const allWanted = [...new Set([...myWant, ...otherWant])];
+  const allWantedGames = games.filter((g) => allWanted.includes(g.appid));
+  const myGames = games.filter((g) => myWant.includes(g.appid));
 
   function getVoteCount(appid: number): number {
     let count = 0;
@@ -35,7 +33,7 @@ export function WantToPlayList({ session, games, onRemove, onVote }: Props) {
       <div className="want-to-play">
         <h2>Want to Play</h2>
         <p className="empty-state">
-          No games added yet. Browse the results above and click "+ Want to
+          No games added yet. Browse the results below and click "+ Want to
           Play" to add up to 5 games each.
         </p>
       </div>
@@ -47,16 +45,20 @@ export function WantToPlayList({ session, games, onRemove, onVote }: Props) {
       {mutualGames.length > 0 && (
         <div className="mutual-section">
           <h2>Both Voted For</h2>
+          <RandomPicker games={mutualGames} label="Pick Random from Mutual Votes" />
           <div className="game-grid">
             {mutualGames.map((game) => (
-              <GameCard
-                key={game.appid}
-                game={game}
-                voteCount={2}
-              />
+              <GameCard key={game.appid} game={game} voteCount={2} />
             ))}
           </div>
         </div>
+      )}
+
+      {allWantedGames.length > 1 && (
+        <RandomPicker
+          games={allWantedGames}
+          label="Pick Random from All Picks"
+        />
       )}
 
       <h2>Your Picks ({myGames.length}/5)</h2>
@@ -80,7 +82,7 @@ export function WantToPlayList({ session, games, onRemove, onVote }: Props) {
 
       <h2>
         {session.playerSlot === "player1" ? "Player 2" : "Player 1"}'s Picks (
-        {otherGames.length + myGames.filter((g) => otherWant.includes(g.appid)).length})
+        {otherWant.length})
       </h2>
       {otherWant.length > 0 ? (
         <div className="game-grid">

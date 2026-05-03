@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import type { GameDetails, SessionState } from "../types/steam";
 import { GameCard } from "./GameCard";
+import { RandomPicker } from "./RandomPicker";
 
 interface Props {
   games: GameDetails[];
@@ -30,9 +31,7 @@ export function ResultsList({ games, session, onAddToWantList }: Props) {
     return true;
   });
 
-  const myWantList = session
-    ? session.wantToPlay[session.playerSlot]
-    : [];
+  const myWantList = session ? session.wantToPlay[session.playerSlot] : [];
   const canAdd = myWantList.length < 5;
 
   return (
@@ -64,6 +63,9 @@ export function ResultsList({ games, session, onAddToWantList }: Props) {
           </select>
         </div>
       </div>
+
+      <RandomPicker games={filtered} label="Pick a Random Game" />
+
       {filtered.length > 0 && (
         <p className="results-count">
           Showing {filtered.length} of {games.length}

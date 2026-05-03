@@ -3,6 +3,7 @@ import { InputForm } from "./components/InputForm";
 import { ResultsList } from "./components/ResultsList";
 import { SessionPanel } from "./components/SessionPanel";
 import { WantToPlayList } from "./components/WantToPlayList";
+import { JoinPanel } from "./components/JoinPanel";
 import { findSharedMultiplayerGames } from "./services/steam";
 import {
   createSession,
@@ -72,6 +73,9 @@ function App() {
     joinSession(code, handleSessionState, setSessionError);
   }
 
+  const hasResults = results && results.length > 0;
+  const inSession = !!session?.sessionId;
+
   return (
     <div className="app">
       <header>
@@ -81,14 +85,27 @@ function App() {
         </p>
       </header>
 
-      {!session?.games.length && (
+      {!inSession && !hasResults && (
+        <>
+          <JoinPanel
+            onJoin={handleJoinSession}
+            error={sessionError}
+          />
+          <div className="section-divider">
+            <span>or search for shared games</span>
+          </div>
+          <InputForm onSubmit={handleSubmit} loading={loading} />
+        </>
+      )}
+
+      {!inSession && hasResults && (
         <InputForm onSubmit={handleSubmit} loading={loading} />
       )}
 
       {progress && <div className="progress">{progress}</div>}
       {error && <div className="error">{error}</div>}
 
-      {results && results.length > 0 && (
+      {hasResults && (
         <SessionPanel
           onCreateSession={handleCreateSession}
           onJoinSession={handleJoinSession}

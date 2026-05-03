@@ -543,6 +543,109 @@ select:focus {
   padding: 2rem;
 }
 
+/* Join Panel */
+.join-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.join-panel h2 {
+  font-size: 1.2rem;
+  color: #fff;
+  margin-bottom: 0.35rem;
+}
+
+.join-panel p {
+  color: var(--text-light);
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.join-row {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  align-items: center;
+}
+
+.join-input {
+  width: 180px;
+  text-align: center;
+  font-family: monospace;
+  font-size: 1.2rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+/* Section divider */
+.section-divider {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 1.5rem 0;
+  color: var(--text-light);
+  font-size: 0.9rem;
+}
+
+.section-divider::before,
+.section-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* Random Picker */
+.random-picker {
+  margin-bottom: 1rem;
+}
+
+.btn-random {
+  background: linear-gradient(135deg, #8e44ad, #3498db);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  padding: 0.6rem 1.25rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s;
+}
+
+.btn-random:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: scale(1.02);
+}
+
+.btn-random:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.random-result {
+  margin-top: 0.75rem;
+  max-width: 320px;
+}
+
+.random-result.spinning .game-card {
+  opacity: 0.7;
+  transition: opacity 0.05s;
+}
+
+.random-result.landed .game-card {
+  border-color: var(--gold);
+  box-shadow: 0 0 16px rgba(241, 196, 15, 0.3);
+  animation: pop-in 0.3s ease-out;
+}
+
+@keyframes pop-in {
+  0% { transform: scale(0.95); opacity: 0.7; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
 /* Responsive */
 @media (max-width: 600px) {
   .form-row {
