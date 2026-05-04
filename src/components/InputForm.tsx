@@ -4,8 +4,7 @@ import { loadConfig, saveConfig } from "../services/storage";
 interface Props {
   onSubmit: (
     apiKey: string,
-    player1: string,
-    player2: string,
+    players: string[],
     familyMembers: string[]
   ) => void;
   loading: boolean;
@@ -13,23 +12,38 @@ interface Props {
 
 export function InputForm({ onSubmit, loading }: Props) {
   const [apiKey, setApiKey] = useState("");
-  const [player1, setPlayer1] = useState("");
-  const [player2, setPlayer2] = useState("");
+  const [players, setPlayers] = useState<string[]>(["", ""]);
   const [familyMembers, setFamilyMembers] = useState<string[]>([]);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     const config = loadConfig();
     setApiKey(config.apiKey);
-    setPlayer1(config.player1);
-    setPlayer2(config.player2);
+    setPlayers(config.players.length >= 2 ? config.players : ["", ""]);
     setFamilyMembers(config.familyMembers);
   }, []);
 
   function handleSave() {
-    saveConfig({ apiKey, player1, player2, familyMembers });
+    saveConfig({ apiKey, players, familyMembers });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
+  }
+
+  function updatePlayer(index: number, value: string) {
+    const updated = [...players];
+    updated[index] = value;
+    setPlayers(updated);
+  }
+
+  function addPlayer() {
+    if (players.length < 4) {
+      setPlayers([...players, ""]);
+    }
+  }
+
+  function removePlayer(index: number) {
+    if (players.length <= 2) return;
+    setPlayers(players.filter((_, i) => i !== index));
   }
 
   function addFamilyMember() {
@@ -48,9 +62,11 @@ export function InputForm({ onSubmit, loading }: Props) {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    saveConfig({ apiKey, player1, player2, familyMembers });
+    saveConfig({ apiKey, players, familyMembers });
     const activeFamilyMembers = familyMembers.filter((m) => m.trim());
-    onSubmit(apiKey, player1, player2, activeFamilyMembers);
+    const activePlayers = players.filter((p) => p.trim());
+    if (activePlayers.length < 2) return;
+    onSubmit(apiKey, activePlayers, activeFamilyMembers);
   }
 
   return (
@@ -77,28 +93,36 @@ export function InputForm({ onSubmit, loading }: Props) {
         </small>
       </div>
 
-      <div className="form-row">
-        <div className="form-section">
-          <label htmlFor="player1">Player 1</label>
-          <input
-            id="player1"
-            type="text"
-            placeholder="Steam ID or vanity URL"
-            value={player1}
-            onChange={(e) => setPlayer1(e.target.value)}
-            required
-          />
+      <div className="form-section">
+        <div className="family-header">
+          <label>Players (2-4)</label>
+          {players.length < 4 && (
+            <button type="button" className="btn-secondary" onClick={addPlayer}>
+              + Add Player
+            </button>
+          )}
         </div>
-        <div className="form-section">
-          <label htmlFor="player2">Player 2</label>
-          <input
-            id="player2"
-            type="text"
-            placeholder="Steam ID or vanity URL"
-            value={player2}
-            onChange={(e) => setPlayer2(e.target.value)}
-            required
-          />
+        <div className="players-grid">
+          {players.map((player, i) => (
+            <div key={i} className="player-input-row">
+              <input
+                type="text"
+                placeholder={`Player ${i + 1} — Steam ID or vanity URL`}
+                value={player}
+                onChange={(e) => updatePlayer(i, e.target.value)}
+                required
+              />
+              {players.length > 2 && (
+                <button
+                  type="button"
+                  className="btn-remove"
+                  onClick={() => removePlayer(i)}
+                >
+                  Remove
+                </button>
+              )}
+            </div>
+          ))}
         </div>
       </div>
 
@@ -114,8 +138,8 @@ export function InputForm({ onSubmit, loading }: Props) {
           </button>
         </div>
         <small>
-          Add other family members to check for games with 2+ copies in the
-          shared family library.
+          Add other family members to count extra copies in the shared family
+          library.
         </small>
         {familyMembers.map((member, i) => (
           <div key={i} className="family-member-row">
@@ -140,11 +164,7 @@ export function InputForm({ onSubmit, loading }: Props) {
         <button type="submit" className="btn-primary" disabled={loading}>
           {loading ? "Searching..." : "Find Games"}
         </button>
-        <button
-          type="button"
-          className="btn-secondary"
-          onClick={handleSave}
-        >
+        <button type="button" className="btn-secondary" onClick={handleSave}>
           {saved ? "Saved!" : "Save Settings"}
         </button>
       </div>

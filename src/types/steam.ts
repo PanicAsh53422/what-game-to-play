@@ -22,25 +22,24 @@ export interface RandomPick {
   timestamp: number;
 }
 
+export interface SessionPlayer {
+  nickname: string;
+  connected: boolean;
+}
+
 export interface SessionState {
   sessionId: string;
   games: GameDetails[];
-  wantToPlay: {
-    player1: number[];
-    player2: number[];
-  };
-  votes: {
-    player1: number[];
-    player2: number[];
-  };
+  players: (SessionPlayer | null)[];
+  wantToPlay: number[][];
+  votes: number[][];
   randomPick: RandomPick | null;
-  playerSlot: "player1" | "player2";
+  playerSlot: number;
   connectedPlayers: number;
 }
 
 export interface SavedConfig {
   apiKey: string;
-  player1: string;
-  player2: string;
+  players: string[];
   familyMembers: string[];
 }

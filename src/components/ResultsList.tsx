@@ -31,7 +31,7 @@ export function ResultsList({ games, session, onAddToWantList }: Props) {
     return true;
   });
 
-  const myWantList = session ? session.wantToPlay[session.playerSlot] : [];
+  const myWantList = session ? (session.wantToPlay[session.playerSlot] || []) : [];
   const canAdd = myWantList.length < 5;
 
   return (

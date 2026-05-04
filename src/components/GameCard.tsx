@@ -8,6 +8,7 @@ interface Props {
   isInWantList?: boolean;
   canAdd?: boolean;
   voteCount?: number;
+  totalPlayers?: number;
   onVote?: () => void;
   hasVoted?: boolean;
 }
@@ -19,11 +20,20 @@ export function GameCard({
   isInWantList,
   canAdd,
   voteCount,
+  totalPlayers,
   onVote,
   hasVoted,
 }: Props) {
+  const allVoted =
+    voteCount !== undefined &&
+    totalPlayers !== undefined &&
+    voteCount >= totalPlayers &&
+    totalPlayers >= 2;
+
   return (
-    <div className={`game-card ${isInWantList ? "in-want-list" : ""} ${voteCount && voteCount >= 2 ? "mutual-vote" : ""}`}>
+    <div
+      className={`game-card ${isInWantList ? "in-want-list" : ""} ${allVoted ? "mutual-vote" : ""}`}
+    >
       <a
         href={getSteamStoreUrl(game.appid)}
         target="_blank"

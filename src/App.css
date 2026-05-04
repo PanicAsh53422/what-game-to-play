@@ -311,6 +311,58 @@ select:focus {
   margin-top: 0.5rem;
 }
 
+.session-create {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.nickname-input {
+  width: 140px;
+}
+
+.session-players {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.player-badge {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.85rem;
+  color: var(--text);
+}
+
+.player-badge.you {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Players grid */
+.players-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.player-input-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.player-input-row input {
+  flex: 1;
+}
+
+/* Join nickname */
+.join-nickname {
+  width: 150px;
+}
+
 /* Want to Play */
 .want-to-play {
   margin-top: 2rem;

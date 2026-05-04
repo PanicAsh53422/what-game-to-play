@@ -34,6 +34,22 @@ export async function resolveToSteamId(
   return data.response.steamid;
 }
 
+export async function getPlayerNames(
+  apiKey: string,
+  steamIds: string[]
+): Promise<Map<string, string>> {
+  const res = await fetch(
+    `/api/player-summaries?key=${encodeURIComponent(apiKey)}&steamids=${steamIds.join(",")}`
+  );
+  const data = await res.json();
+  const map = new Map<string, string>();
+  const players = data?.response?.players || [];
+  for (const p of players) {
+    map.set(p.steamid, p.personaname);
+  }
+  return map;
+}
+
 export async function getOwnedGames(
   apiKey: string,
   steamId: string
@@ -91,17 +107,20 @@ function delay(ms: number) {
 
 export async function findSharedMultiplayerGames(
   apiKey: string,
-  player1Input: string,
-  player2Input: string,
+  playerInputs: string[],
   familyMemberInputs: string[],
   onProgress: (msg: string) => void
 ): Promise<GameDetails[]> {
+  const playerCount = playerInputs.length;
   onProgress("Resolving Steam IDs...");
 
-  const allInputs = [player1Input, player2Input, ...familyMemberInputs];
+  const allInputs = [...playerInputs, ...familyMemberInputs];
   const steamIds = await Promise.all(
     allInputs.map((input) => resolveToSteamId(apiKey, input))
   );
+
+  onProgress("Fetching Steam profile names...");
+  const nameMap = await getPlayerNames(apiKey, steamIds);
 
   onProgress("Fetching game libraries...");
 
@@ -118,28 +137,32 @@ export async function findSharedMultiplayerGames(
 
   const copiesCount = new Map<number, number>();
   const ownedByMap = new Map<number, string[]>();
-  const labels = allInputs.map((_input, i) =>
-    i === 0 ? "Player 1" : i === 1 ? "Player 2" : `Family Member ${i - 1}`
-  );
 
   for (let i = 0; i < allLibraries.length; i++) {
+    const steamId = steamIds[i];
+    const label =
+      nameMap.get(steamId) ||
+      (i < playerCount
+        ? `Player ${i + 1}`
+        : `Family Member ${i - playerCount + 1}`);
+
     for (const game of allLibraries[i]) {
       copiesCount.set(game.appid, (copiesCount.get(game.appid) || 0) + 1);
       const owners = ownedByMap.get(game.appid) || [];
-      owners.push(labels[i]);
+      owners.push(label);
       ownedByMap.set(game.appid, owners);
     }
   }
 
   const candidateAppIds: number[] = [];
   for (const [appid, copies] of copiesCount) {
-    if (copies >= 2) {
+    if (copies >= playerCount) {
       candidateAppIds.push(appid);
     }
   }
 
   onProgress(
-    `Found ${candidateAppIds.length} games with 2+ copies. Checking which are multiplayer...`
+    `Found ${candidateAppIds.length} games with ${playerCount}+ copies. Checking which are multiplayer...`
   );
 
   const results: GameDetails[] = [];

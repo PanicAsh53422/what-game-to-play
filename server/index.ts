@@ -69,6 +69,22 @@ app.get("/api/app-details", async (req, res) => {
   }
 });
 
+app.get("/api/player-summaries", async (req, res) => {
+  const { key, steamids } = req.query;
+  if (!key || !steamids) {
+    res.status(400).json({ error: "key and steamids are required" });
+    return;
+  }
+  try {
+    const url = `${STEAM_API}/ISteamUser/GetPlayerSummaries/v0002/?key=${key}&steamids=${steamids}`;
+    const response = await fetch(url);
+    const data = await response.json();
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: `Failed to fetch player summaries: ${err}` });
+  }
+});
+
 // --- Session management ---
 
 interface GameData {
@@ -88,12 +104,17 @@ interface RandomPick {
   timestamp: number;
 }
 
+interface SessionPlayer {
+  socketId: string;
+  nickname: string;
+}
+
 interface Session {
   id: string;
   games: GameData[];
-  wantToPlay: { player1: number[]; player2: number[] };
-  votes: { player1: number[]; player2: number[] };
-  sockets: { player1: string | null; player2: string | null };
+  players: (SessionPlayer | null)[];
+  wantToPlay: number[][];
+  votes: number[][];
   randomPick: RandomPick | null;
 }
 
@@ -108,137 +129,121 @@ function generateSessionId(): string {
   return id;
 }
 
-function getConnectedCount(session: Session): number {
-  let count = 0;
-  if (session.sockets.player1) count++;
-  if (session.sockets.player2) count++;
-  return count;
-}
-
 function broadcastState(session: Session) {
   const base = {
     sessionId: session.id,
     games: session.games,
+    players: session.players.map((p) =>
+      p ? { nickname: p.nickname, connected: true } : null
+    ),
     wantToPlay: session.wantToPlay,
     votes: session.votes,
     randomPick: session.randomPick,
-    connectedPlayers: getConnectedCount(session),
+    connectedPlayers: session.players.filter((p) => p !== null).length,
   };
 
-  if (session.sockets.player1) {
-    io.to(session.sockets.player1).emit("session:state", {
-      ...base,
-      playerSlot: "player1",
-    });
-  }
-  if (session.sockets.player2) {
-    io.to(session.sockets.player2).emit("session:state", {
-      ...base,
-      playerSlot: "player2",
-    });
+  for (let i = 0; i < session.players.length; i++) {
+    const p = session.players[i];
+    if (p) {
+      io.to(p.socketId).emit("session:state", {
+        ...base,
+        playerSlot: i,
+      });
+    }
   }
 }
 
 io.on("connection", (socket) => {
   let currentSessionId: string | null = null;
-  let currentSlot: "player1" | "player2" | null = null;
-
-  socket.on("session:create", (data: { games: GameData[] }) => {
-    const id = generateSessionId();
-    const session: Session = {
-      id,
-      games: data.games,
-      wantToPlay: { player1: [], player2: [] },
-      votes: { player1: [], player2: [] },
-      sockets: { player1: socket.id, player2: null },
-      randomPick: null,
-    };
-    sessions.set(id, session);
-    currentSessionId = id;
-    currentSlot = "player1";
-    broadcastState(session);
-  });
-
-  socket.on("session:join", (data: { sessionId: string }) => {
-    const session = sessions.get(data.sessionId.toUpperCase());
-    if (!session) {
-      socket.emit("session:error", "Session not found");
-      return;
-    }
-
-    if (session.sockets.player1 === socket.id || session.sockets.player2 === socket.id) {
-      broadcastState(session);
-      return;
-    }
-
-    if (session.sockets.player2 && session.sockets.player2 !== socket.id) {
-      socket.emit("session:error", "Session is full");
-      return;
-    }
-
-    session.sockets.player2 = socket.id;
-    currentSessionId = session.id;
-    currentSlot = "player2";
-    broadcastState(session);
-  });
+  let currentSlot: number = -1;
 
   socket.on(
-    "session:add-game",
-    (data: { appid: number }) => {
-      if (!currentSessionId || !currentSlot) return;
-      const session = sessions.get(currentSessionId);
-      if (!session) return;
-
-      const list = session.wantToPlay[currentSlot];
-      if (list.length >= 5 || list.includes(data.appid)) return;
-
-      list.push(data.appid);
+    "session:create",
+    (data: { games: GameData[]; nickname: string }) => {
+      const id = generateSessionId();
+      const session: Session = {
+        id,
+        games: data.games,
+        players: [
+          { socketId: socket.id, nickname: data.nickname || "Host" },
+          null,
+          null,
+          null,
+        ],
+        wantToPlay: [[], [], [], []],
+        votes: [[], [], [], []],
+        randomPick: null,
+      };
+      sessions.set(id, session);
+      currentSessionId = id;
+      currentSlot = 0;
       broadcastState(session);
     }
   );
 
   socket.on(
-    "session:remove-game",
-    (data: { appid: number }) => {
-      if (!currentSessionId || !currentSlot) return;
-      const session = sessions.get(currentSessionId);
-      if (!session) return;
-
-      session.wantToPlay[currentSlot] = session.wantToPlay[currentSlot].filter(
-        (id) => id !== data.appid
-      );
-      session.votes[currentSlot] = session.votes[currentSlot].filter(
-        (id) => id !== data.appid
-      );
-      broadcastState(session);
-    }
-  );
-
-  socket.on(
-    "session:vote",
-    (data: { appid: number }) => {
-      if (!currentSessionId || !currentSlot) return;
-      const session = sessions.get(currentSessionId);
-      if (!session) return;
-
-      const allWanted = [
-        ...session.wantToPlay.player1,
-        ...session.wantToPlay.player2,
-      ];
-      if (!allWanted.includes(data.appid)) return;
-
-      const votes = session.votes[currentSlot];
-      if (votes.includes(data.appid)) {
-        session.votes[currentSlot] = votes.filter((id) => id !== data.appid);
-      } else {
-        session.votes[currentSlot].push(data.appid);
+    "session:join",
+    (data: { sessionId: string; nickname: string }) => {
+      const session = sessions.get(data.sessionId.toUpperCase());
+      if (!session) {
+        socket.emit("session:error", "Session not found");
+        return;
       }
+
+      const existingSlot = session.players.findIndex(
+        (p) => p?.socketId === socket.id
+      );
+      if (existingSlot !== -1) {
+        currentSessionId = session.id;
+        currentSlot = existingSlot;
+        broadcastState(session);
+        return;
+      }
+
+      const freeSlot = session.players.findIndex((p) => p === null);
+      if (freeSlot === -1) {
+        socket.emit("session:error", "Session is full (max 4 players)");
+        return;
+      }
+
+      session.players[freeSlot] = {
+        socketId: socket.id,
+        nickname: data.nickname || `Player ${freeSlot + 1}`,
+      };
+      currentSessionId = session.id;
+      currentSlot = freeSlot;
       broadcastState(session);
     }
   );
+
+  socket.on("session:add-game", (data: { appid: number }) => {
+    if (!currentSessionId || currentSlot < 0) return;
+    const session = sessions.get(currentSessionId);
+    if (!session) return;
+
+    const list = session.wantToPlay[currentSlot];
+    if (list.length >= 5 || list.includes(data.appid)) return;
+
+    list.push(data.appid);
+    broadcastState(session);
+  });
+
+  socket.on("session:remove-game", (data: { appid: number }) => {
+    if (!currentSessionId || currentSlot < 0) return;
+    const session = sessions.get(currentSessionId);
+    if (!session) return;
+
+    session.wantToPlay[currentSlot] = session.wantToPlay[currentSlot].filter(
+      (id) => id !== data.appid
+    );
+    session.votes[currentSlot] = session.votes[currentSlot].filter(
+      (id) => id !== data.appid
+    );
+    broadcastState(session);
+  });
 
   socket.on("session:clear-picks", () => {
-    if (!currentSessionId || !currentSlot) return;
+    if (!currentSessionId || currentSlot < 0) return;
     const session = sessions.get(currentSessionId);
     if (!session) return;
 
@@ -250,6 +255,23 @@ io.on("connection", (socket) => {
     broadcastState(session);
   });
 
+  socket.on("session:vote", (data: { appid: number }) => {
+    if (!currentSessionId || currentSlot < 0) return;
+    const session = sessions.get(currentSessionId);
+    if (!session) return;
+
+    const allWanted = session.wantToPlay.flat();
+    if (!allWanted.includes(data.appid)) return;
+
+    const votes = session.votes[currentSlot];
+    if (votes.includes(data.appid)) {
+      session.votes[currentSlot] = votes.filter((id) => id !== data.appid);
+    } else {
+      session.votes[currentSlot].push(data.appid);
+    }
+    broadcastState(session);
+  });
+
   socket.on(
     "session:random-pick",
     (data: { source: string; appids: number[] }) => {
@@ -257,7 +279,8 @@ io.on("connection", (socket) => {
       const session = sessions.get(currentSessionId);
       if (!session || data.appids.length === 0) return;
 
-      const picked = data.appids[Math.floor(Math.random() * data.appids.length)];
+      const picked =
+        data.appids[Math.floor(Math.random() * data.appids.length)];
       session.randomPick = {
         source: data.source,
         appid: picked,
@@ -268,18 +291,13 @@ io.on("connection", (socket) => {
   );
 
   socket.on("disconnect", () => {
-    if (!currentSessionId) return;
+    if (!currentSessionId || currentSlot < 0) return;
     const session = sessions.get(currentSessionId);
     if (!session) return;
 
-    if (session.sockets.player1 === socket.id) {
-      session.sockets.player1 = null;
-    }
-    if (session.sockets.player2 === socket.id) {
-      session.sockets.player2 = null;
-    }
+    session.players[currentSlot] = null;
 
-    if (!session.sockets.player1 && !session.sockets.player2) {
+    if (session.players.every((p) => p === null)) {
       sessions.delete(currentSessionId);
     } else {
       broadcastState(session);

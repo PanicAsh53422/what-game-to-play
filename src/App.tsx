@@ -28,8 +28,7 @@ function App() {
 
   async function handleSubmit(
     apiKey: string,
-    player1: string,
-    player2: string,
+    players: string[],
     familyMembers: string[],
   ) {
     setLoading(true);
@@ -41,8 +40,7 @@ function App() {
     try {
       const games = await findSharedMultiplayerGames(
         apiKey,
-        player1,
-        player2,
+        players,
         familyMembers,
         setProgress,
       );
@@ -64,15 +62,15 @@ function App() {
     }
   }, []);
 
-  function handleCreateSession() {
+  function handleCreateSession(nickname: string) {
     if (!results) return;
     setSessionError(null);
-    createSession(results, handleSessionState, setSessionError);
+    createSession(results, nickname, handleSessionState, setSessionError);
   }
 
-  function handleJoinSession(code: string) {
+  function handleJoinSession(code: string, nickname: string) {
     setSessionError(null);
-    joinSession(code, handleSessionState, setSessionError);
+    joinSession(code, nickname, handleSessionState, setSessionError);
   }
 
   const hasResults = results && results.length > 0;
@@ -83,7 +81,8 @@ function App() {
       <header>
         <h1>What Game to Play?</h1>
         <p>
-          Find multiplayer games you and your friend can play together on Steam.
+          Find multiplayer games you and your friends can play together on
+          Steam.
         </p>
       </header>
 
@@ -109,8 +108,8 @@ function App() {
           onCreateSession={handleCreateSession}
           onJoinSession={handleJoinSession}
           sessionId={session?.sessionId ?? null}
-          connectedPlayers={session?.connectedPlayers ?? 0}
-          playerSlot={session?.playerSlot ?? null}
+          players={session?.players ?? []}
+          playerSlot={session?.playerSlot ?? -1}
           sessionError={sessionError}
         />
       )}

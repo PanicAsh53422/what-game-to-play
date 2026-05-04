@@ -1,16 +1,17 @@
 import { useState } from "react";
 
 interface Props {
-  onJoin: (code: string) => void;
+  onJoin: (code: string, nickname: string) => void;
   error: string | null;
 }
 
 export function JoinPanel({ onJoin, error }: Props) {
   const [code, setCode] = useState("");
+  const [nickname, setNickname] = useState("");
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (code.trim()) onJoin(code.trim());
+    if (code.trim()) onJoin(code.trim(), nickname.trim());
   }
 
   return (
@@ -26,7 +27,19 @@ export function JoinPanel({ onJoin, error }: Props) {
           maxLength={6}
           className="join-input"
         />
-        <button type="submit" className="btn-primary" disabled={code.length < 6}>
+        <input
+          type="text"
+          placeholder="Your nickname"
+          value={nickname}
+          onChange={(e) => setNickname(e.target.value)}
+          className="join-nickname"
+          maxLength={20}
+        />
+        <button
+          type="submit"
+          className="btn-primary"
+          disabled={code.length < 6}
+        >
           Join Session
         </button>
       </div>

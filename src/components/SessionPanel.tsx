@@ -1,11 +1,12 @@
 import { useState } from "react";
+import type { SessionPlayer } from "../types/steam";
 
 interface Props {
-  onCreateSession: () => void;
-  onJoinSession: (code: string) => void;
+  onCreateSession: (nickname: string) => void;
+  onJoinSession: (code: string, nickname: string) => void;
   sessionId: string | null;
-  connectedPlayers: number;
-  playerSlot: "player1" | "player2" | null;
+  players: (SessionPlayer | null)[];
+  playerSlot: number;
   sessionError: string | null;
 }
 
@@ -13,11 +14,12 @@ export function SessionPanel({
   onCreateSession,
   onJoinSession,
   sessionId,
-  connectedPlayers,
+  players,
   playerSlot,
   sessionError,
 }: Props) {
   const [joinCode, setJoinCode] = useState("");
+  const [nickname, setNickname] = useState("");
   const [copied, setCopied] = useState(false);
 
   function handleCopy() {
@@ -29,6 +31,7 @@ export function SessionPanel({
   }
 
   if (sessionId) {
+    const connected = players.filter((p) => p !== null).length;
     return (
       <div className="session-panel active">
         <div className="session-info">
@@ -40,10 +43,24 @@ export function SessionPanel({
             </button>
           </div>
           <div className="session-status">
-            <span className={`status-dot ${connectedPlayers >= 2 ? "connected" : ""}`} />
-            {connectedPlayers}/2 players connected
-            {playerSlot && <span className="slot-label"> (You are {playerSlot === "player1" ? "Player 1" : "Player 2"})</span>}
+            <span
+              className={`status-dot ${connected >= 2 ? "connected" : ""}`}
+            />
+            {connected}/4 players
           </div>
+        </div>
+        <div className="session-players">
+          {players.map((p, i) =>
+            p ? (
+              <span
+                key={i}
+                className={`player-badge ${i === playerSlot ? "you" : ""}`}
+              >
+                {p.nickname}
+                {i === playerSlot && " (you)"}
+              </span>
+            ) : null
+          )}
         </div>
       </div>
     );
@@ -52,21 +69,44 @@ export function SessionPanel({
   return (
     <div className="session-panel">
       <div className="session-actions">
-        <button className="btn-primary" onClick={onCreateSession}>
-          Create Session
-        </button>
+        <div className="session-create">
+          <input
+            type="text"
+            placeholder="Your nickname"
+            value={nickname}
+            onChange={(e) => setNickname(e.target.value)}
+            maxLength={20}
+            className="nickname-input"
+          />
+          <button
+            className="btn-primary"
+            onClick={() => onCreateSession(nickname.trim())}
+          >
+            Create Session
+          </button>
+        </div>
         <span className="session-divider">or</span>
         <div className="session-join">
           <input
             type="text"
-            placeholder="Enter session code"
+            placeholder="Session code"
             value={joinCode}
             onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
             maxLength={6}
           />
+          <input
+            type="text"
+            placeholder="Nickname"
+            value={nickname}
+            onChange={(e) => setNickname(e.target.value)}
+            maxLength={20}
+            className="nickname-input"
+          />
           <button
             className="btn-primary"
-            onClick={() => joinCode && onJoinSession(joinCode)}
+            onClick={() =>
+              joinCode && onJoinSession(joinCode, nickname.trim())
+            }
             disabled={!joinCode}
           >
             Join

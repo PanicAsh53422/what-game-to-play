@@ -14,30 +14,37 @@ function getSocket(): Socket {
   return socket;
 }
 
-export function createSession(
-  games: GameDetails[],
+function bindListeners(
+  s: Socket,
   onState: (state: SessionState) => void,
   onError: (msg: string) => void
 ) {
-  const s = getSocket();
   s.off("session:state");
   s.off("session:error");
   s.on("session:state", onState);
   s.on("session:error", onError);
-  s.emit("session:create", { games });
+}
+
+export function createSession(
+  games: GameDetails[],
+  nickname: string,
+  onState: (state: SessionState) => void,
+  onError: (msg: string) => void
+) {
+  const s = getSocket();
+  bindListeners(s, onState, onError);
+  s.emit("session:create", { games, nickname });
 }
 
 export function joinSession(
   sessionId: string,
+  nickname: string,
   onState: (state: SessionState) => void,
   onError: (msg: string) => void
 ) {
   const s = getSocket();
-  s.off("session:state");
-  s.off("session:error");
-  s.on("session:state", onState);
-  s.on("session:error", onError);
-  s.emit("session:join", { sessionId });
+  bindListeners(s, onState, onError);
+  s.emit("session:join", { sessionId, nickname });
 }
 
 export function addGameToWantList(appid: number) {

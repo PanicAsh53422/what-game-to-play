@@ -21,23 +21,26 @@ export function WantToPlayList({
   onRandomPick,
   onAdd,
 }: Props) {
-  const myWant = session.wantToPlay[session.playerSlot];
-  const otherSlot = session.playerSlot === "player1" ? "player2" : "player1";
-  const otherWant = session.wantToPlay[otherSlot];
-
-  const allWanted = [...new Set([...myWant, ...otherWant])];
-  const allWantedGames = games.filter((g) => allWanted.includes(g.appid));
+  const mySlot = session.playerSlot;
+  const myWant = session.wantToPlay[mySlot] || [];
   const myGames = games.filter((g) => myWant.includes(g.appid));
   const canAdd = myWant.length < 5;
 
+  const allWanted = [...new Set(session.wantToPlay.flat())];
+  const allWantedGames = games.filter((g) => allWanted.includes(g.appid));
+
+  const activePlayers = session.players
+    .map((p, i) => (p ? { ...p, slot: i } : null))
+    .filter((p) => p !== null);
+
   function getVoteCount(appid: number): number {
-    let count = 0;
-    if (session.votes.player1.includes(appid)) count++;
-    if (session.votes.player2.includes(appid)) count++;
-    return count;
+    return session.votes.filter((v) => v.includes(appid)).length;
   }
 
-  const mutualVotes = allWanted.filter((appid) => getVoteCount(appid) >= 2);
+  const totalPlayers = activePlayers.length;
+  const mutualVotes = allWanted.filter(
+    (appid) => getVoteCount(appid) >= Math.max(2, totalPlayers)
+  );
   const mutualGames = games.filter((g) => mutualVotes.includes(g.appid));
 
   if (allWanted.length === 0) {
@@ -56,7 +59,7 @@ export function WantToPlayList({
     <div className="want-to-play">
       {mutualGames.length > 0 && (
         <div className="mutual-section">
-          <h2>Both Voted For</h2>
+          <h2>Everyone Voted For</h2>
           <RandomPicker
             games={mutualGames}
             label="Pick Random from Mutual Votes"
@@ -69,7 +72,12 @@ export function WantToPlayList({
           />
           <div className="game-grid">
             {mutualGames.map((game) => (
-              <GameCard key={game.appid} game={game} voteCount={2} />
+              <GameCard
+                key={game.appid}
+                game={game}
+                voteCount={getVoteCount(game.appid)}
+                totalPlayers={totalPlayers}
+              />
             ))}
           </div>
         </div>
@@ -105,8 +113,9 @@ export function WantToPlayList({
               isInWantList
               onRemove={() => onRemove(game.appid)}
               voteCount={getVoteCount(game.appid)}
+              totalPlayers={totalPlayers}
               onVote={() => onVote(game.appid)}
-              hasVoted={session.votes[session.playerSlot].includes(game.appid)}
+              hasVoted={(session.votes[mySlot] || []).includes(game.appid)}
             />
           ))}
         </div>
@@ -114,29 +123,39 @@ export function WantToPlayList({
         <p className="empty-state">You haven't picked any games yet.</p>
       )}
 
-      <h2>
-        {session.playerSlot === "player1" ? "Player 2" : "Player 1"}'s Picks (
-        {otherWant.length})
-      </h2>
-      {otherWant.length > 0 ? (
-        <div className="game-grid">
-          {games
-            .filter((g) => otherWant.includes(g.appid))
-            .map((game) => (
-              <GameCard
-                key={game.appid}
-                game={game}
-                voteCount={getVoteCount(game.appid)}
-                onVote={() => onVote(game.appid)}
-                hasVoted={session.votes[session.playerSlot].includes(
-                  game.appid
-                )}
-              />
-            ))}
-        </div>
-      ) : (
-        <p className="empty-state">Waiting for the other player to pick...</p>
-      )}
+      {activePlayers
+        .filter((p) => p.slot !== mySlot)
+        .map((p) => {
+          const theirWant = session.wantToPlay[p.slot] || [];
+          const theirGames = games.filter((g) => theirWant.includes(g.appid));
+          return (
+            <div key={p.slot}>
+              <h2>
+                {p.nickname}'s Picks ({theirGames.length})
+              </h2>
+              {theirGames.length > 0 ? (
+                <div className="game-grid">
+                  {theirGames.map((game) => (
+                    <GameCard
+                      key={game.appid}
+                      game={game}
+                      voteCount={getVoteCount(game.appid)}
+                      totalPlayers={totalPlayers}
+                      onVote={() => onVote(game.appid)}
+                      hasVoted={(session.votes[mySlot] || []).includes(
+                        game.appid
+                      )}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <p className="empty-state">
+                  Waiting for {p.nickname} to pick...
+                </p>
+              )}
+            </div>
+          );
+        })}
     </div>
   );
 }
