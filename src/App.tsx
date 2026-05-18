@@ -4,6 +4,8 @@ import { ResultsList } from "./components/ResultsList";
 import { SessionPanel } from "./components/SessionPanel";
 import { WantToPlayList } from "./components/WantToPlayList";
 import { JoinPanel } from "./components/JoinPanel";
+import { ModeToggle } from "./components/ModeToggle";
+import { DiscoveryPage } from "./components/DiscoveryPage";
 import { findSharedMultiplayerGames } from "./services/steam";
 import {
   createSession,
@@ -18,6 +20,7 @@ import type { GameDetails, SessionState } from "./types/steam";
 import "./App.css";
 
 function App() {
+  const [mode, setMode] = useState<"together" | "discover">("together");
   const [results, setResults] = useState<GameDetails[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -82,56 +85,64 @@ function App() {
         <h1>What Game to Play?</h1>
         <p>
           Find multiplayer games you and your friends can play together on
-          Steam.
+          Steam — or explore your own library.
         </p>
       </header>
 
-      {!inSession && !hasResults && (
+      <ModeToggle mode={mode} onChangeMode={setMode} />
+
+      {mode === "discover" ? (
+        <DiscoveryPage />
+      ) : (
         <>
-          <JoinPanel onJoin={handleJoinSession} error={sessionError} />
-          <div className="section-divider">
-            <span>or search for shared games</span>
-          </div>
-          <InputForm onSubmit={handleSubmit} loading={loading} />
+          {!inSession && !hasResults && (
+            <>
+              <JoinPanel onJoin={handleJoinSession} error={sessionError} />
+              <div className="section-divider">
+                <span>or search for shared games</span>
+              </div>
+              <InputForm onSubmit={handleSubmit} loading={loading} />
+            </>
+          )}
+
+          {!inSession && hasResults && (
+            <InputForm onSubmit={handleSubmit} loading={loading} />
+          )}
+
+          {progress && <div className="progress">{progress}</div>}
+          {error && <div className="error">{error}</div>}
+
+          {hasResults && (
+            <SessionPanel
+              onCreateSession={handleCreateSession}
+              onJoinSession={handleJoinSession}
+              sessionId={session?.sessionId ?? null}
+              players={session?.players ?? []}
+              playerSlot={session?.playerSlot ?? -1}
+              sessionError={sessionError}
+            />
+          )}
+
+          {session && results && (
+            <WantToPlayList
+              session={session}
+              games={results}
+              onRemove={removeGameFromWantList}
+              onVote={voteForGame}
+              onClearAll={clearAllPicks}
+              onRandomPick={triggerRandomPick}
+              onAdd={addGameToWantList}
+            />
+          )}
+
+          {results && (
+            <ResultsList
+              games={results}
+              session={session}
+              onAddToWantList={session ? addGameToWantList : undefined}
+            />
+          )}
         </>
-      )}
-
-      {!inSession && hasResults && (
-        <InputForm onSubmit={handleSubmit} loading={loading} />
-      )}
-
-      {progress && <div className="progress">{progress}</div>}
-      {error && <div className="error">{error}</div>}
-
-      {hasResults && (
-        <SessionPanel
-          onCreateSession={handleCreateSession}
-          onJoinSession={handleJoinSession}
-          sessionId={session?.sessionId ?? null}
-          players={session?.players ?? []}
-          playerSlot={session?.playerSlot ?? -1}
-          sessionError={sessionError}
-        />
-      )}
-
-      {session && results && (
-        <WantToPlayList
-          session={session}
-          games={results}
-          onRemove={removeGameFromWantList}
-          onVote={voteForGame}
-          onClearAll={clearAllPicks}
-          onRandomPick={triggerRandomPick}
-          onAdd={addGameToWantList}
-        />
-      )}
-
-      {results && (
-        <ResultsList
-          games={results}
-          session={session}
-          onAddToWantList={session ? addGameToWantList : undefined}
-        />
       )}
     </div>
   );
