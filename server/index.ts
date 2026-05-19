@@ -78,7 +78,7 @@ app.get("/api/app-tags", async (req, res) => {
   try {
     const url = `https://steamspy.com/api.php?request=appdetails&appid=${appid}`;
     const response = await fetch(url);
-    const data = await response.json();
+    const data = (await response.json()) as { tags?: Record<string, number> };
     const tags = data.tags ? Object.keys(data.tags) : [];
     res.json({ appid: Number(appid), tags });
   } catch (err) {
