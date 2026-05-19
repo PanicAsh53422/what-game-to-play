@@ -57,6 +57,9 @@ export function LibraryFilters({
             className="playtime-slider"
           />
           <span className="slider-label">{sliderMax}h+</span>
+          <span className="slider-value">
+            {sliderValue === 0 ? "No filter" : `≤ ${sliderValue}h`}
+          </span>
         </div>
       </div>
       <div className="filters-row">

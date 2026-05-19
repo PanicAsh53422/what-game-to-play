@@ -55,11 +55,16 @@ export function LibraryGameCard({ game, isStarred, onStar, onFindSimilar }: Prop
         </div>
         <div className="game-tags">
           {game.genreLoaded ? (
-            game.genres.map((g) => (
-              <span key={g} className="tag tag-genre">
-                {g}
-              </span>
-            ))
+            <>
+              {game.genres.slice(0, 8).map((g) => (
+                <span key={g} className="tag tag-genre">
+                  {g}
+                </span>
+              ))}
+              {game.genres.length > 8 && (
+                <span className="tag tag-more">+{game.genres.length - 8}</span>
+              )}
+            </>
           ) : (
             <span className="tag tag-loading">Loading...</span>
           )}

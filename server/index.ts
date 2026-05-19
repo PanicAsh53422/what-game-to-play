@@ -60,12 +60,29 @@ app.get("/api/app-details", async (req, res) => {
     return;
   }
   try {
-    const url = `${STORE_API}/api/appdetails?appids=${appids}`;
+    const url = `${STORE_API}/api/appdetails?appids=${appids}&l=english`;
     const response = await fetch(url);
     const data = await response.json();
     res.json(data);
   } catch (err) {
     res.status(500).json({ error: `Failed to fetch app details: ${err}` });
+  }
+});
+
+app.get("/api/app-tags", async (req, res) => {
+  const { appid } = req.query;
+  if (!appid) {
+    res.status(400).json({ error: "appid is required" });
+    return;
+  }
+  try {
+    const url = `https://steamspy.com/api.php?request=appdetails&appid=${appid}`;
+    const response = await fetch(url);
+    const data = await response.json();
+    const tags = data.tags ? Object.keys(data.tags) : [];
+    res.json({ appid: Number(appid), tags });
+  } catch (err) {
+    res.status(500).json({ error: `Failed to fetch app tags: ${err}` });
   }
 });
 
@@ -82,6 +99,54 @@ app.get("/api/player-summaries", async (req, res) => {
     res.json(data);
   } catch (err) {
     res.status(500).json({ error: `Failed to fetch player summaries: ${err}` });
+  }
+});
+
+app.get("/api/family-group-for-user", async (req, res) => {
+  const { key, steamid } = req.query;
+  if (!key || !steamid) {
+    res.status(400).json({ error: "key and steamid are required" });
+    return;
+  }
+  try {
+    const url = `${STEAM_API}/IFamilyGroupsService/GetFamilyGroupForUser/v1/?key=${key}&steamid=${steamid}`;
+    const response = await fetch(url);
+    const data = await response.json();
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: `Failed to fetch family group: ${err}` });
+  }
+});
+
+app.get("/api/family-group", async (req, res) => {
+  const { key, familygroupid } = req.query;
+  if (!key || !familygroupid) {
+    res.status(400).json({ error: "key and familygroupid are required" });
+    return;
+  }
+  try {
+    const url = `${STEAM_API}/IFamilyGroupsService/GetFamilyGroup/v1/?key=${key}&family_groupid=${familygroupid}`;
+    const response = await fetch(url);
+    const data = await response.json();
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: `Failed to fetch family group details: ${err}` });
+  }
+});
+
+app.get("/api/family-shared-library", async (req, res) => {
+  const { key, familygroupid } = req.query;
+  if (!key || !familygroupid) {
+    res.status(400).json({ error: "key and familygroupid are required" });
+    return;
+  }
+  try {
+    const url = `${STEAM_API}/IFamilyGroupsService/GetSharedLibraryApps/v1/?key=${key}&family_groupid=${familygroupid}&include_own=true`;
+    const response = await fetch(url);
+    const data = await response.json();
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: `Failed to fetch shared library: ${err}` });
   }
 });
 

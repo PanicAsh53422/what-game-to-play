@@ -6,12 +6,14 @@ interface Props {
 }
 
 export function SimilarBanner({ filter, onClear }: Props) {
+  const allTags = [...new Set([...filter.genres, ...filter.tags])];
+  const displayTags = allTags.slice(0, 10);
   return (
     <div className="similar-banner">
       <span>
         Similar to: <strong>{filter.name}</strong>
         <span className="similar-genres">
-          {" "}({filter.genres.join(", ")})
+          {" "}({displayTags.join(", ")}{allTags.length > 10 ? `, +${allTags.length - 10} more` : ""})
         </span>
       </span>
       <button className="btn-clear-similar" onClick={onClear}>

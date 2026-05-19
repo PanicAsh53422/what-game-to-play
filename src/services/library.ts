@@ -5,31 +5,62 @@ import { readGenreCache, setCachedGenres } from "./genreCache";
 export async function loadLibrary(
   apiKey: string,
   steamInput: string,
+  familyMemberInputs: string[],
   onProgress: (msg: string) => void,
 ): Promise<LibraryGame[]> {
   onProgress("Resolving Steam ID...");
   const steamId = await resolveToSteamId(apiKey, steamInput);
 
-  onProgress("Fetching game library...");
-  const rawGames = await getOwnedGames(apiKey, steamId);
+  const familyIds: string[] = [];
+  for (const input of familyMemberInputs) {
+    if (input.trim()) {
+      onProgress(`Resolving family member: ${input.trim()}...`);
+      familyIds.push(await resolveToSteamId(apiKey, input));
+    }
+  }
+
+  onProgress("Fetching your game library...");
+  const myGames = await getOwnedGames(apiKey, steamId);
+
+  const gameMap = new Map<number, { name: string; playtime: number }>();
+  for (const g of myGames) {
+    gameMap.set(g.appid, { name: g.name, playtime: g.playtime_forever });
+  }
+
+  for (let i = 0; i < familyIds.length; i++) {
+    onProgress(`Fetching family member ${i + 1} library...`);
+    try {
+      const familyGames = await getOwnedGames(apiKey, familyIds[i]);
+      for (const g of familyGames) {
+        if (!gameMap.has(g.appid)) {
+          gameMap.set(g.appid, { name: g.name, playtime: 0 });
+        }
+      }
+    } catch {
+      // skip family members with private libraries
+    }
+  }
 
   const cache = readGenreCache();
-  const games: LibraryGame[] = rawGames.map((g) => {
-    const cached = cache[String(g.appid)];
-    return {
-      appid: g.appid,
-      name: g.name,
-      playtimeMinutes: g.playtime_forever,
-      playtimeHours: Math.round((g.playtime_forever / 60) * 10) / 10,
+  const games: LibraryGame[] = [];
+  for (const [appid, info] of gameMap) {
+    const cached = cache[String(appid)];
+    games.push({
+      appid,
+      name: info.name,
+      playtimeMinutes: info.playtime,
+      playtimeHours: Math.round((info.playtime / 60) * 10) / 10,
       headerImage: cached?.headerImage || "",
       genres: cached?.genres || [],
       categories: cached?.categories || [],
+      tags: cached?.tags || [],
       genreLoaded: !!cached,
-    };
-  });
+    });
+  }
 
   games.sort((a, b) => a.name.localeCompare(b.name));
-  onProgress(`Loaded ${games.length} games.`);
+  const familyNote = familyIds.length > 0 ? ` (including ${familyIds.length} family libraries)` : "";
+  onProgress(`Loaded ${games.length} games${familyNote}.`);
   return games;
 }
 
@@ -49,9 +80,19 @@ export async function fetchGenresBatch(
     await Promise.all(
       batch.map(async (appid) => {
         try {
-          const res = await fetch(`/api/app-details?appids=${appid}`);
-          const data = await res.json();
+          const [detailsRes, tagsRes] = await Promise.all([
+            fetch(`/api/app-details?appids=${appid}`),
+            fetch(`/api/app-tags?appid=${appid}`),
+          ]);
+          const data = await detailsRes.json();
           const appData = data[String(appid)];
+          let tags: string[] = [];
+          try {
+            const tagsData = await tagsRes.json();
+            tags = tagsData.tags || [];
+          } catch {
+            // tags fetch failed, proceed without
+          }
           if (appData?.success) {
             const cats = (appData.data.categories || []).map(
               (c: { description: string }) => c.description,
@@ -59,9 +100,11 @@ export async function fetchGenresBatch(
             const gens = (appData.data.genres || []).map(
               (g: { description: string }) => g.description,
             );
+            const allGenres = [...new Set([...gens, ...tags])];
             results[appid] = {
-              genres: gens,
+              genres: allGenres,
               categories: cats,
+              tags,
               headerImage: appData.data.header_image || "",
             };
           }

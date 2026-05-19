@@ -854,6 +854,19 @@ select:focus {
   border-radius: var(--radius);
   text-align: center;
   min-width: 100px;
+  cursor: pointer;
+  background: none;
+  font-family: inherit;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.stat-card-active {
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
 }
 
 .stat-count {
@@ -937,6 +950,14 @@ select:focus {
   accent-color: var(--accent);
 }
 
+.slider-value {
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 600;
+  min-width: 5rem;
+  text-align: center;
+}
+
 /* Mood Selector */
 .mood-selector {
   margin: 1rem 0;
@@ -987,6 +1008,30 @@ select:focus {
 }
 
 .btn-mood:hover:not(.active) {
+  opacity: 0.8;
+}
+
+.sub-genre-buttons {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.btn-sub-genre {
+  padding: 0.25rem 0.65rem;
+  border-radius: 14px;
+  border: 1px solid;
+  background: transparent;
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-sub-genre.active {
+  font-weight: 600;
+}
+
+.btn-sub-genre:hover:not(.active) {
   opacity: 0.8;
 }
 

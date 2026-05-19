@@ -1,6 +1,6 @@
 import type { GenreCacheEntry } from "../types/discovery";
 
-const CACHE_KEY = "genre-cache";
+const CACHE_KEY = "genre-cache-v3";
 
 export function readGenreCache(): Record<string, GenreCacheEntry> {
   try {
