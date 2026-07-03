@@ -6,6 +6,7 @@ import { WantToPlayList } from "./components/WantToPlayList";
 import { JoinPanel } from "./components/JoinPanel";
 import { ModeToggle } from "./components/ModeToggle";
 import { DiscoveryPage } from "./components/DiscoveryPage";
+import { TierListPage } from "./components/TierListPage";
 import { findSharedMultiplayerGames } from "./services/steam";
 import {
   createSession,
@@ -20,7 +21,7 @@ import type { GameDetails, SessionState } from "./types/steam";
 import "./App.css";
 
 function App() {
-  const [mode, setMode] = useState<"together" | "discover">("together");
+  const [mode, setMode] = useState<"together" | "discover" | "tierlist">("together");
   const [results, setResults] = useState<GameDetails[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -93,6 +94,8 @@ function App() {
 
       {mode === "discover" ? (
         <DiscoveryPage />
+      ) : mode === "tierlist" ? (
+        <TierListPage />
       ) : (
         <>
           {!inSession && !hasResults && (

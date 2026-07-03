@@ -19,6 +19,10 @@ app.use(express.json());
 const STEAM_API = "https://api.steampowered.com";
 const STORE_API = "https://store.steampowered.com";
 
+interface SteamSpyAppDetails {
+  tags?: Record<string, number>;
+}
+
 // --- Steam API proxy routes ---
 
 app.get("/api/owned-games", async (req, res) => {
@@ -78,7 +82,7 @@ app.get("/api/app-tags", async (req, res) => {
   try {
     const url = `https://steamspy.com/api.php?request=appdetails&appid=${appid}`;
     const response = await fetch(url);
-    const data = (await response.json()) as { tags?: Record<string, number> };
+    const data = (await response.json()) as SteamSpyAppDetails;
     const tags = data.tags ? Object.keys(data.tags) : [];
     res.json({ appid: Number(appid), tags });
   } catch (err) {
@@ -185,6 +189,40 @@ interface Session {
 
 const sessions = new Map<string, Session>();
 
+interface LibraryGameData {
+  appid: number;
+  name: string;
+  playtimeMinutes: number;
+  playtimeHours: number;
+  headerImage: string;
+  genres: string[];
+  categories: string[];
+  tags: string[];
+  genreLoaded: boolean;
+}
+
+interface TierListTierData {
+  id: string;
+  name: string;
+  color: string;
+  gameIds: number[];
+}
+
+interface TierListPlayer {
+  socketId: string;
+  nickname: string;
+}
+
+interface TierListSession {
+  id: string;
+  games: LibraryGameData[];
+  tiers: TierListTierData[];
+  players: TierListPlayer[];
+  updatedAt: number;
+}
+
+const tierListSessions = new Map<string, TierListSession>();
+
 function generateSessionId(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let id = "";
@@ -218,9 +256,99 @@ function broadcastState(session: Session) {
   }
 }
 
+function sanitizeTierListTiers(tiers: TierListTierData[]): TierListTierData[] {
+  const usedTierIds = new Set<string>();
+  const usedGameIds = new Set<number>();
+
+  return tiers
+    .filter((tier) => tier && typeof tier.id === "string")
+    .map((tier, index) => {
+      let id = tier.id.trim() || `tier-${index}`;
+      if (usedTierIds.has(id)) id = `${id}-${index}`;
+      usedTierIds.add(id);
+
+      const gameIds = Array.isArray(tier.gameIds)
+        ? tier.gameIds
+            .map((appid) => Number(appid))
+            .filter((appid) => Number.isFinite(appid) && !usedGameIds.has(appid))
+        : [];
+
+      gameIds.forEach((appid) => usedGameIds.add(appid));
+
+      return {
+        id,
+        name: String(tier.name || `Tier ${index + 1}`).slice(0, 40),
+        color: /^#[0-9a-f]{6}$/i.test(tier.color) ? tier.color : "#66c0f4",
+        gameIds,
+      };
+    })
+    .slice(0, 20);
+}
+
+function sanitizeTierListGames(games: LibraryGameData[]): LibraryGameData[] {
+  const usedAppIds = new Set<number>();
+
+  return games
+    .filter((game) => game && Number.isFinite(Number(game.appid)))
+    .map((game) => ({
+      appid: Number(game.appid),
+      name: String(game.name || `App ${game.appid}`).slice(0, 180),
+      playtimeMinutes: Number(game.playtimeMinutes) || 0,
+      playtimeHours: Number(game.playtimeHours) || 0,
+      headerImage: String(game.headerImage || ""),
+      genres: Array.isArray(game.genres) ? game.genres.map(String).slice(0, 30) : [],
+      categories: Array.isArray(game.categories) ? game.categories.map(String).slice(0, 30) : [],
+      tags: Array.isArray(game.tags) ? game.tags.map(String).slice(0, 40) : [],
+      genreLoaded: Boolean(game.genreLoaded),
+    }))
+    .filter((game) => {
+      if (usedAppIds.has(game.appid)) return false;
+      usedAppIds.add(game.appid);
+      return true;
+    })
+    .slice(0, 2500);
+}
+
+function broadcastTierListState(session: TierListSession) {
+  const state = {
+    sessionId: session.id,
+    games: session.games,
+    tiers: session.tiers,
+    players: session.players.map((player) => ({
+      nickname: player.nickname,
+      connected: true,
+    })),
+    connectedPlayers: session.players.length,
+    updatedAt: session.updatedAt,
+  };
+
+  for (const player of session.players) {
+    io.to(player.socketId).emit("tier-list:state", state);
+  }
+}
+
 io.on("connection", (socket) => {
   let currentSessionId: string | null = null;
   let currentSlot: number = -1;
+  let currentTierListSessionId: string | null = null;
+
+  function leaveCurrentTierListSession() {
+    if (!currentTierListSessionId) return;
+    const session = tierListSessions.get(currentTierListSessionId);
+    if (!session) {
+      currentTierListSessionId = null;
+      return;
+    }
+
+    session.players = session.players.filter((player) => player.socketId !== socket.id);
+    if (session.players.length === 0) {
+      tierListSessions.delete(session.id);
+    } else {
+      session.updatedAt = Date.now();
+      broadcastTierListState(session);
+    }
+    currentTierListSessionId = null;
+  }
 
   socket.on(
     "session:create",
@@ -245,6 +373,77 @@ io.on("connection", (socket) => {
       broadcastState(session);
     }
   );
+
+  socket.on(
+    "tier-list:create",
+    (data: { games: LibraryGameData[]; tiers: TierListTierData[]; nickname: string }) => {
+      leaveCurrentTierListSession();
+      const id = generateSessionId();
+      const session: TierListSession = {
+        id,
+        games: sanitizeTierListGames(data.games || []),
+        tiers: sanitizeTierListTiers(data.tiers || []),
+        players: [{ socketId: socket.id, nickname: data.nickname || "Host" }],
+        updatedAt: Date.now(),
+      };
+
+      tierListSessions.set(id, session);
+      currentTierListSessionId = id;
+      broadcastTierListState(session);
+    }
+  );
+
+  socket.on(
+    "tier-list:join",
+    (data: { sessionId: string; nickname: string }) => {
+      leaveCurrentTierListSession();
+      const session = tierListSessions.get(String(data.sessionId || "").toUpperCase());
+      if (!session) {
+        socket.emit("tier-list:error", "Tier list session not found");
+        return;
+      }
+
+      const existingPlayer = session.players.find((player) => player.socketId === socket.id);
+      if (!existingPlayer) {
+        if (session.players.length >= 12) {
+          socket.emit("tier-list:error", "Tier list session is full");
+          return;
+        }
+        session.players.push({
+          socketId: socket.id,
+          nickname: data.nickname || `Player ${session.players.length + 1}`,
+        });
+      }
+
+      currentTierListSessionId = session.id;
+      session.updatedAt = Date.now();
+      broadcastTierListState(session);
+    }
+  );
+
+  socket.on("tier-list:update-tiers", (data: { tiers: TierListTierData[] }) => {
+    if (!currentTierListSessionId) return;
+    const session = tierListSessions.get(currentTierListSessionId);
+    if (!session) return;
+
+    session.tiers = sanitizeTierListTiers(data.tiers || []);
+    session.updatedAt = Date.now();
+    broadcastTierListState(session);
+  });
+
+  socket.on("tier-list:update-games", (data: { games: LibraryGameData[] }) => {
+    if (!currentTierListSessionId) return;
+    const session = tierListSessions.get(currentTierListSessionId);
+    if (!session) return;
+
+    session.games = sanitizeTierListGames(data.games || []);
+    session.updatedAt = Date.now();
+    broadcastTierListState(session);
+  });
+
+  socket.on("tier-list:leave", () => {
+    leaveCurrentTierListSession();
+  });
 
   socket.on(
     "session:join",
@@ -356,6 +555,8 @@ io.on("connection", (socket) => {
   );
 
   socket.on("disconnect", () => {
+    leaveCurrentTierListSession();
+
     if (!currentSessionId || currentSlot < 0) return;
     const session = sessions.get(currentSessionId);
     if (!session) return;

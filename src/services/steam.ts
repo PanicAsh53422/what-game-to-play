@@ -1,6 +1,7 @@
 import type { SteamGame, GameDetails } from "../types/steam";
 
 const MULTIPLAYER_CATEGORY_IDS = [1, 9, 36, 37, 38, 39, 49];
+const STEAM_ID64_ACCOUNT_OFFSET = 76561197960265728n;
 
 interface SteamCategory {
   id: number;
@@ -18,9 +19,13 @@ export async function resolveToSteamId(
 ): Promise<string> {
   const trimmed = input.trim();
   if (/^\d{17}$/.test(trimmed)) return trimmed;
+  if (/^\d{5,12}$/.test(trimmed)) {
+    return (BigInt(trimmed) + STEAM_ID64_ACCOUNT_OFFSET).toString();
+  }
 
   const vanity = trimmed
     .replace(/^https?:\/\/steamcommunity\.com\/id\//, "")
+    .replace(/^https?:\/\/steamcommunity\.com\/profiles\//, "")
     .replace(/\/$/, "");
 
   const res = await fetch(

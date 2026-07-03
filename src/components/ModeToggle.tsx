@@ -1,6 +1,6 @@
 interface Props {
-  mode: "together" | "discover";
-  onChangeMode: (mode: "together" | "discover") => void;
+  mode: "together" | "discover" | "tierlist";
+  onChangeMode: (mode: "together" | "discover" | "tierlist") => void;
 }
 
 export function ModeToggle({ mode, onChangeMode }: Props) {
@@ -17,6 +17,12 @@ export function ModeToggle({ mode, onChangeMode }: Props) {
         onClick={() => onChangeMode("discover")}
       >
         Explore My Library
+      </button>
+      <button
+        className={`mode-tab ${mode === "tierlist" ? "active" : ""}`}
+        onClick={() => onChangeMode("tierlist")}
+      >
+        Tier List
       </button>
     </div>
   );

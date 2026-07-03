@@ -7,7 +7,7 @@ function getSocket(): Socket {
   if (!socket) {
     const url =
       import.meta.env.MODE === "development"
-        ? "http://localhost:3001"
+        ? import.meta.env.VITE_SOCKET_URL || "http://localhost:3001"
         : window.location.origin;
     socket = io(url);
   }

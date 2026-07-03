@@ -41,6 +41,27 @@ export interface GenreCacheEntry {
   headerImage: string;
 }
 
+export interface TierListTier {
+  id: string;
+  name: string;
+  color: string;
+  gameIds: number[];
+}
+
+export interface TierListPlayer {
+  nickname: string;
+  connected: boolean;
+}
+
+export interface TierListSessionState {
+  sessionId: string;
+  games: LibraryGame[];
+  tiers: TierListTier[];
+  players: TierListPlayer[];
+  connectedPlayers: number;
+  updatedAt: number;
+}
+
 export const MOOD_PRESETS: MoodPreset[] = [
   { label: "Chill", emoji: "\u{1F9D8}", color: "#27ae60", genres: ["Casual", "Simulation", "Puzzle", "Relaxing"] },
   { label: "Action", emoji: "\u{1F4A5}", color: "#e74c3c", genres: ["Action", "Shooter", "Fighting", "Hack and Slash"] },
